@@ -13,12 +13,16 @@ namespace VectorConverter.Test
 			var vc = new VectorConverter();
 			
 			vc.GhostscriptDir = @"C:\Program Files (x86)\gs\gs9.14\";
-			vc.Eps2Pdf(@"..\..\..\Example\graphics.eps", @"..\..\..\Example\graphics.pdf");
+			vc.ConvertEpsToPdf(@"..\..\..\Example\graphics.eps", @"..\..\..\Example\graphics.pdf");
 
 			vc.Pdf2SvgDir = @"C:\pdf2svg-0.2.2\";
-			vc.Pdf2Svg(@"..\..\..\Example\graphics.pdf", @"..\..\..\Example\graphics.svg");
+			vc.ConvertPdfToSvg(@"..\..\..\Example\graphics.pdf", @"..\..\..\Example\graphics-from-pdf.svg");
+			
+			vc.ConvertEpsToSvg(@"..\..\..\Example\graphics.eps", @"..\..\..\Example\graphics-from-eps.svg");
 
-			vc.Eps2Svg(@"..\..\..\Example\graphics.eps", @"..\..\..\Example\graphics2.svg");
+			vc.InkscapeDir = @"C:\Program Files (x86)\Inkscape\";
+			vc.ConvertSvgToPdf(@"..\..\..\Example\graphics-from-eps.svg", @"..\..\..\Example\graphics-from-svg.pdf");
+			vc.ConvertSvgToEps(@"..\..\..\Example\graphics-from-eps.svg", @"..\..\..\Example\graphics-from-svg.eps");
 		}
 	}
 }

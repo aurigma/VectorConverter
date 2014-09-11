@@ -12,67 +12,77 @@ namespace VectorConverter
 	{
 		public string GhostscriptDir { get; set; }
 		public string Pdf2SvgDir { get; set; }
- 
+		public string InkscapeDir { get; set; }
 
-		public void Eps2Pdf(string inputPath, string outputPath)
+
+		private void RunProcess(string fileName, string arguments, string workingDirectory = null)
+		{
+			var psi = new ProcessStartInfo(fileName, arguments);
+			psi.WindowStyle = ProcessWindowStyle.Hidden;
+			if (!String.IsNullOrEmpty(workingDirectory))
+			{
+				psi.WorkingDirectory = workingDirectory;
+			}
+
+			var process = new Process();
+			process.StartInfo = psi;
+			process.StartInfo.UseShellExecute = false;
+			process.StartInfo.RedirectStandardOutput = true;
+			process.Start();
+			process.WaitForExit();
+
+			if (process.ExitCode != 0)
+			{
+				throw new Exception(String.Format("Process '{0} {1}' exit code was {2}", psi.FileName, psi.Arguments, process.ExitCode));
+			}
+		}
+
+
+		private void ConvertSvgUsingInkscape(string inputPath, string ouputPath, string param)
+		{
+			if (String.IsNullOrEmpty(InkscapeDir))
+			{
+				throw new InvalidOperationException("Inkscape directory is undefined");
+			}
+
+			RunProcess(Path.Combine(InkscapeDir + "inkscape"),
+				"\"" + Path.GetFullPath(inputPath) + "\" " + param + "\"" + Path.GetFullPath(ouputPath) + "\"");
+		}
+
+
+		public void ConvertEpsToPdf(string inputPath, string outputPath)
 		{
 			if (String.IsNullOrEmpty(GhostscriptDir))
 			{
 				throw new InvalidOperationException("Ghostscript directory is undefined");
 			}
 
-			var psi = new ProcessStartInfo(Path.Combine(GhostscriptDir + "lib/ps2pdf.bat"),
-				"\"" + Path.GetFullPath(inputPath) + "\" \"" + Path.GetFullPath(outputPath) + "\"");
-			psi.WindowStyle = ProcessWindowStyle.Hidden;
-			psi.WorkingDirectory = Path.Combine(GhostscriptDir + "bin");
- 
-			var process = new Process();
-			process.StartInfo = psi;
-			process.StartInfo.UseShellExecute = false;
-			process.StartInfo.RedirectStandardOutput = true;
-			process.Start();
-			process.WaitForExit();
- 
-			if (process.ExitCode != 0)
-			{
-				throw new Exception(String.Format("Process '{0} {1}' exit code was {2}", psi.FileName, psi.Arguments, process.ExitCode));   
-			}
+			RunProcess(Path.Combine(GhostscriptDir + "lib/ps2pdf.bat"),
+				"\"" + Path.GetFullPath(inputPath) + "\" \"" + Path.GetFullPath(outputPath) + "\"",
+				Path.Combine(GhostscriptDir + "bin"));
 		}
  
 
-		public void Pdf2Svg(string inputPath, string ouputPath)
+		public void ConvertPdfToSvg(string inputPath, string ouputPath)
 		{ 
 			if (String.IsNullOrEmpty(Pdf2SvgDir))
 			{
 				throw new InvalidOperationException("pdf2svg directory is undefined");
 			}
 
-			var psi = new ProcessStartInfo(Path.Combine(Pdf2SvgDir + "pdf2svg"),
+			RunProcess(Path.Combine(Pdf2SvgDir + "pdf2svg"),
 				"\"" + Path.GetFullPath(inputPath) + "\" \"" + Path.GetFullPath(ouputPath) + "\"");
-			psi.WindowStyle = ProcessWindowStyle.Hidden;
- 
-			var process = new Process();
-			process.StartInfo = psi;
-			process.StartInfo.UseShellExecute = false;
-			process.StartInfo.RedirectStandardOutput = true;
-			process.Start();
-			process.WaitForExit();
- 
-			if (process.ExitCode != 0)
-			{
-				throw new Exception(String.Format("Process '{0} {1}' exit code was {2}", psi.FileName, psi.Arguments, process.ExitCode));   
-			}
 		}
 
  
-		public void Eps2Svg(string inputPath, string outputPath)
+		public void ConvertEpsToSvg(string inputPath, string outputPath)
 		{
 			string tempPdfFileName = System.IO.Path.GetTempFileName();
 			
 			try
 			{
-				Eps2Pdf(inputPath, tempPdfFileName);
-				Pdf2Svg(tempPdfFileName, outputPath);
+				ConvertEpsToPdf(inputPath, tempPdfFileName);
+				ConvertPdfToSvg(tempPdfFileName, outputPath);
 			}
 			finally
 			{
@@ -82,5 +92,18 @@ namespace VectorConverter
 				}
 			}			
 		}
+
+
+		public void ConvertSvgToPdf(string inputPath, string ouputPath)
+		{
+			ConvertSvgUsingInkscape(inputPath, ouputPath, "--export-pdf=");
+		}
+
+
+		public void ConvertSvgToEps(string inputPath, string ouputPath)
+		{
+			ConvertSvgUsingInkscape(inputPath, ouputPath, "--export-eps=");
+		}
+			
 	}
 }
